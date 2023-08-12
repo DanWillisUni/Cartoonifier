@@ -3,9 +3,6 @@ from Cartoonifiers import blur
 from Cartoonifiers import basic_cartoonify
 
 class BaseCartoon():
-    def __init__(self, image_path):
-        self.base_image = self.get_image(image_path)
-
     def get_image(self, image_path):
         # read the image
         original_image = cv2.imread(image_path)
@@ -19,7 +16,10 @@ class BaseCartoon():
 
         return cv2.resize(original_image, (960, 540))
 
-    def use_blur_to_cartoonify(self):
-        return blur.cartoonify(self.base_image)
-    def use_basic_cartoon(self):
-        return basic_cartoonify.cartoonify(self.base_image)
+    def get_video(self, video_path):
+        return cv2.VideoCapture(video_path)
+
+    def use_blur_to_cartoonify(self, image):
+        return blur.cartoonify(image)
+    def use_basic_cartoon(self, image):
+        return basic_cartoonify.cartoonify(image)

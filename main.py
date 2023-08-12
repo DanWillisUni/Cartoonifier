@@ -1,10 +1,10 @@
-import easygui #to open the filebox
-
+import easygui
 import os
 import tkinter as tk
 from tkinter import ttk
 import cv2
 import matplotlib.pyplot as plt
+import magic
 
 from Cartoonifiers import base as bc
 class App():
@@ -38,41 +38,75 @@ class App():
         self.upload = tk.Button(self.window, text="Cartoonify", padx = 10, pady = 5)
         self.upload.configure(background='#364156', foreground='white', font=('calibri', 10, 'bold'))
         self.upload.grid(column=1, row=7)
-        self.upload.bind('<Button-1>', self.cartoonify_image)
+        self.upload.bind('<Button-1>', self.cartoonify_button_action)
 
-        self.caroonified_image = None
-        self.image_path = None
+        self.caroonified_item = None
+        self.file_path = None
+        self.cartoonifier = bc.BaseCartoon()
 
-    def cartoonify_image(self, event):
-        image_path = easygui.fileopenbox()
-        self.image_path = image_path
-
-        cartoonifier = bc.BaseCartoon(self.image_path)
+    def cartoonify_image(self, image):
         current_value = self.cartoonifier_selector.get()
         if current_value == 'Basic':
-            print("Using Basic")
-            cartoon_image = cartoonifier.use_basic_cartoon()
+            cartoon_image = self.cartoonifier.use_basic_cartoon(image)
         elif current_value == 'Blur':
-            print("Using Blur")
-            cartoon_image = cartoonifier.use_blur_to_cartoonify()
+            cartoon_image = self.cartoonifier.use_blur_to_cartoonify(image)
         else:
             print("Unable to locate cartoonifier")
+        return cartoon_image
+    def cartoonify_button_action(self, event):
+        video_name = easygui.fileopenbox()
+        self.file_path = video_name
 
-        plt.figure()
-        plt.imshow(cartoon_image)
-        plt.show()
+        file_type = magic.from_buffer(open(video_name, "rb").read(2048)).split(",")[0]
+        if "image" in file_type:
+            img = self.cartoonifier.get_image(video_name)
+            cartoon_image = self.cartoonify_image(img)
 
-        self.caroonified_image = cartoon_image
+            plt.figure()
+            plt.imshow(cartoon_image)
+            plt.show()
 
-        self.save_button.grid(column=1, row=9)
+            self.caroonified_item = cartoon_image
+
+            self.save_button.grid(column=1, row=9)
+        else:
+            vidcap = self.cartoonifier.get_video(video_name)
+            fps = vidcap.get(cv2.CAP_PROP_FPS)
+            success, image = vidcap.read()
+
+            newName = os.path.splitext(self.file_path)[0] + "_cartoonified"
+            path1 = os.path.dirname(self.file_path)
+            extension = os.path.splitext(self.file_path)[1]
+            video_name = os.path.join(path1, newName + extension)
+            image_folder = os.path.join(path1, newName + "_frames")
+            count = 0
+            os.mkdir(image_folder)
+            while success:
+                cartoon_image = self.cartoonify_image(image)
+                name = os.path.join(image_folder, "frame_" + str(count) + ".png")
+                cv2.imwrite(name, cartoon_image)
+                success, image = vidcap.read()
+                count += 1
+
+            images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
+            frame = cv2.imread(os.path.join(image_folder, images[0]))
+            height, width, layers = frame.shape
+
+            cartoon_video = cv2.VideoWriter(video_name, 0, fps, (width, height))
+
+            for image in images:
+                cartoon_video.write(cv2.imread(os.path.join(image_folder, image)))
+
+            cv2.destroyAllWindows()
+            cartoon_video.release()
 
     def save(self, event):
         # saving an image using imwrite()
-        newName = os.path.splitext(self.image_path)[0] + "_cartoonified"
-        path1 = os.path.dirname(self.image_path)
-        extension = os.path.splitext(self.image_path)[1]
+        newName = os.path.splitext(self.file_path)[0] + "_cartoonified"
+        path1 = os.path.dirname(self.file_path)
+        extension = os.path.splitext(self.file_path)[1]
         path = os.path.join(path1, newName + extension)
-        cv2.imwrite(path, cv2.cvtColor(self.caroonified_image, cv2.COLOR_RGB2BGR))
+        cv2.imwrite(path, cv2.cvtColor(self.caroonified_item, cv2.COLOR_RGB2BGR))
         I = "Image saved by name " + newName + " at " + path
         tk.messagebox.showinfo(title=None, message=I)
 
