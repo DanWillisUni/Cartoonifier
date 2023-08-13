@@ -36,6 +36,11 @@ class App():
         self.upload.grid(column=1, row=7)
         self.upload.bind('<Button-1>', self.cartoonify_button_action)
 
+        self.camera = tk.Button(self.window, text="Camera", padx=10, pady=5)
+        self.camera.configure(background='#364156', foreground='white', font=('calibri', 10, 'bold'))
+        self.camera.grid(column=1, row=9)
+        self.camera.bind('<Button-1>', self.camera_button_action)
+
         self.cartoonifier = bc.BaseCartoon()
 
     def cartoonify_image(self, image):
@@ -49,9 +54,17 @@ class App():
             sys.exit()
         return cartoon_image
 
+    def camera_button_action(self, event):
+        vid = cv2.VideoCapture(0)
+        while (True):
+            ret, frame = vid.read()
+            cv2.imshow('frame', self.cartoonify_image(frame))
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        vid.release()
+        cv2.destroyAllWindows()
+
     def generate_frame_dir(self, file_path):
-        ct = datetime.datetime.now()
-        print("current time:-", ct)
         print("Generating frames...")
         vidcap = cv2.VideoCapture(file_path)
         fps = round(vidcap.get(cv2.CAP_PROP_FPS))
@@ -75,8 +88,6 @@ class App():
                 print(str(round(100 * count/frame_count)) + "%")
             success, image = vidcap.read()
             count += 1
-        ct = datetime.datetime.now()
-        print("current time:-", ct)
         return saving_fps
 
     def generate_video_from_frames(self, fps, file_path):
