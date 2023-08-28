@@ -1,11 +1,13 @@
 import cv2
 import os
 import matplotlib.pyplot as plt
+from varibles import *
+
 def display_image(img):
     plt.figure()
     plt.imshow(img)
     plt.show()
-def get_image(self, image_path):
+def get_image(image_path):
     # read the image
     original_image = cv2.imread(image_path)
     original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
@@ -15,7 +17,9 @@ def get_image(self, image_path):
         print("Can not find any image. Choose appropriate file")
         sys.exit()
 
-    return cv2.resize(original_image, (960, 540))
+    if RESIZE:
+        original_image=cv2.resize(original_image, RESIZE_SIZE)
+    return original_image
 
 def get_new_save_path(file_path):
     newName = os.path.splitext(file_path)[0] + "_cartoonified"

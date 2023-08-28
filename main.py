@@ -3,11 +3,12 @@ import tkinter as tk
 from tkinter import ttk
 import magic
 import shutil
-import datetime
 
 from utils import *
 from varibles import *
 from Cartoonifiers import base as bc
+
+TEST=False
 class App():
     def __init__(self):
         self.window = tk.Tk()
@@ -58,7 +59,7 @@ class App():
         vid = cv2.VideoCapture(0)
         while (True):
             ret, frame = vid.read()
-            cv2.imshow('frame', self.cartoonify_image(frame))
+            cv2.imshow('frame', self.cartoonifier.use_basic_cartoon(frame))
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         vid.release()
@@ -93,11 +94,14 @@ class App():
     def generate_video_from_frames(self, fps, file_path):
         image_folder = get_new_frame_dir(file_path)
         images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
-        frame = cv2.imread(os.path.join(image_folder, images[0]))
-        height, width, layers = frame.shape
+        video_shape=RESIZE_SIZE
+        if not RESIZE:
+            frame = cv2.imread(os.path.join(image_folder, images[0]))
+            height, width, layers = frame.shape
+            video_shape = (width, height)
 
         save_path = get_new_save_path(file_path)
-        cartoon_video = cv2.VideoWriter(save_path, 0, fps, (width, height))
+        cartoon_video = cv2.VideoWriter(save_path, 0, fps, video_shape)
 
         for image in images:
             cartoon_video.write(cv2.imread(os.path.join(image_folder, image)))
@@ -124,4 +128,14 @@ class App():
         tk.messagebox.showinfo(title=None, message="Image saved: " + path)
 
 if __name__ == "__main__":
-    App().window.mainloop()
+    if not TEST:
+        App().window.mainloop()
+    file_path = "C:/Users/danwi/Downloads/337829497_742947520785929_489258823538170951_n.jpg"
+    file_path_to_save = "C:/Users/danwi/Downloads/cartoonified"
+    img = get_image(file_path)  # Get image
+    cartoonifier = bc.BaseCartoon()
+    for i in range(10):
+        i = i + 1
+        print(i)
+        cartoon_image = cartoonifier.use_basic_cartoon_calculated(img, i)
+        cv2.imwrite(file_path_to_save + "_" + str(i) + ".jpg", cv2.cvtColor(cartoon_image, cv2.COLOR_RGB2BGR))  # Save image
